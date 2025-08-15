@@ -94,7 +94,6 @@ function Dashboard() {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          alert('Template sent to live successfully!');
         } else {
           alert('Failed to send template.');
         }
@@ -209,3 +208,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>
+
