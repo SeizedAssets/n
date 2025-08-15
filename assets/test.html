@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zoned Panel</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" integrity="sha384-+5qD+ziTqDN3HL4R0Oepmohc6y+3uJvG9ISf0u+KgItPRc8XNT7pPZxJ+PS+Kn8+" crossorigin="anonymous"></script>
+</head>
+<body class="bg-gray-100">
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+function App() {
+  const [activeTab, setActiveTab] = React.useState('dashboard');
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-blue-600 text-white">
+        <h1 className="text-3xl font-bold">Loading Dashboard...</h1>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className="bg-blue-600 text-white p-4 shadow flex items-center justify-between">
+        <div></div>
+        <h1 className="text-2xl font-bold">Zoned Panel</h1>
+        <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Profile" className="h-8 w-8 rounded-full" />
+      </header>
+
+      <nav className="bg-blue-500 text-white p-2 flex space-x-4">
+        <button 
+          className={`flex items-center space-x-1 px-3 py-1 rounded ${activeTab === 'dashboard' ? 'bg-white text-blue-600' : 'hover:bg-blue-400 hover:text-white'}`} 
+          onClick={() => setActiveTab('dashboard')}>
+          <img src="https://cdn.discordapp.com/attachments/1404828812121735241/1405345922568687766/dashboard.png" alt="Dashboard" className="h-5 w-5" />
+          <span>Dashboard</span>
+        </button>
+        <button 
+          className={`flex items-center space-x-1 px-3 py-1 rounded ${activeTab === 'inputDetections' ? 'bg-white text-blue-600' : 'hover:bg-blue-400 hover:text-white'}`} 
+          onClick={() => setActiveTab('inputDetections')}>
+          <img src="https://cdn.discordapp.com/attachments/1404828812121735241/1405345922224885780/input.png" alt="Input Detections" className="h-5 w-5" />
+          <span>Input Detections</span>
+        </button>
+      </nav>
+
+      <main className="flex-1 p-6">
+        {activeTab === 'dashboard' && <Dashboard />}
+        {activeTab === 'inputDetections' && <InputDetections />}
+      </main>
+    </div>
+  );
+}
+
+function Dashboard() {
+  const [connections, setConnections] = React.useState([]);
+
+  React.useEffect(() => {
+    const socket = io();
+    socket.on('all-connections', data => setConnections(data));
+    socket.on('new-connection', conn => setConnections(prev => [...prev, conn]));
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  return (
+    <div>
+      <h2 className="text-xl font-semibold mb-4">Active Connections</h2>
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white border border-gray-300">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border px-4 py-2">IP</th>
+              <th className="border px-4 py-2">ISP</th>
+              <th className="border px-4 py-2">Country</th>
+              <th className="border px-4 py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {connections.map(conn => (
+              <tr key={conn.id} className="transition-colors duration-500 hover:bg-gray-100">
+                <td className="border px-4 py-2">{conn.ip}</td>
+                <td className="border px-4 py-2">{conn.isp}</td>
+                <td className="border px-4 py-2">{conn.countryName}</td>
+                <td className="border px-4 py-2">
+                  <button title="Update Page" className="p-1">
+                    <img src="https://cdn.discordapp.com/attachments/1404828812121735241/1405346833353674822/file.png" alt="Update" className="h-6 w-6" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function InputDetections() {
+  return (
+    <div>
+      <h2 className="text-xl font-semibold mb-4">Input Detections</h2>
+      <div className="bg-white p-4 rounded shadow">
+        <p>No input detections yet.</p>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+</body>
+</html>

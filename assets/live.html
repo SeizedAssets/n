@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Page</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+</style>
+</head>
+<body>
+
+<div id="template-container">
+  <p>Waiting for template...</p>
+</div>
+
+<script>
+  const socket = io();
+
+  // Listen for template updates
+  socket.on('update-template', (html) => {
+    document.getElementById('template-container').innerHTML = html;
+  });
+
+  // Optional: send connections (if you want to keep live connections logging)
+  function sendConnection() {
+    fetch('/live', { method: 'GET' }); // will still hit /live endpoint if needed
+  }
+</script>
+
+</body>
+</html>
